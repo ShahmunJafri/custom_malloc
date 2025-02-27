@@ -26,26 +26,22 @@ void vmfree(void *ptr)
 		return; 
 	}
 
-	ptr = (void*) (curr_block_header);
-
 	if(!(curr_block_header->size_status & VM_PREVBUSY)){
-		struct block_footer* prev_footer = (struct block_footer*)((char*)(ptr) - sizeof(struct block_footer));
+		struct block_footer* prev_footer = (struct block_footer*)((char*)(curr_block_header) - sizeof(struct block_footer));
 		struct block_header* prev_header = (struct block_header*)((char*)(ptr) - (prev_footer->size));
-		ptr = coalesce(&prev_header, &curr_block_header);
-		curr_block_header = (struct block_header*)(ptr);	
+		curr_block_header = coalesce(&prev_header, &curr_block_header);
 	}
 
-	struct block_header* next_header = (struct block_header*)((char*)(ptr) + BLKSZ(curr_block_header));
+	struct block_header* next_header = (struct block_header*)((char*)(curr_block_header) + BLKSZ(curr_block_header));
 	
 	if(!(next_header->size_status & VM_BUSY)){
-		ptr = coalesce(&curr_block_header, &next_header);
-		ptr = (void*) (curr_block_header); 
-		curr_block_header = (struct block_header*)(ptr);	
+		curr_block_header = coalesce(&curr_block_header, &next_header);
 	}
 	
 	set_block_footer(curr_block_header);
-	
+
 	struct block_header* next_block_after_coalesce = (struct block_header*)((char*) curr_block_header + BLKSZ(curr_block_header));
+
 	if(next_block_after_coalesce->size_status == VM_ENDMARK){
 		return;
 	}
@@ -70,6 +66,6 @@ void *  coalesce(struct block_header** prev, struct block_header** curr){
 	new_block->size_status = curr_size + prev_size; 
 	new_block->size_status = new_block->size_status | (prev_size_status & VM_PREVBUSY);
 
-	return (void*) new_block;
+	return  new_block;
 }
 
