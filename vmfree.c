@@ -39,16 +39,14 @@ void vmfree(void *ptr)
 	}
 	
 	set_block_footer(curr_block_header);
+	curr_block_header->size_status = curr_block_header->size_status & ~VM_BUSY;
 
 	struct block_header* next_block_after_coalesce = (struct block_header*)((char*) curr_block_header + BLKSZ(curr_block_header));
-
 	if(next_block_after_coalesce->size_status == VM_ENDMARK){
 		return;
 	}
 	
-	next_block_after_coalesce->size_status = next_block_after_coalesce->size_status & ~VM_PREVBUSY;
-
-	
+	next_block_after_coalesce->size_status = next_block_after_coalesce->size_status & ~VM_PREVBUSY;	
 }
 
 void set_block_footer(struct block_header* block){
