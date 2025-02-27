@@ -28,7 +28,7 @@ void vmfree(void *ptr)
 
 	if(!(curr_block_header->size_status & VM_PREVBUSY)){
 		struct block_footer* prev_footer = (struct block_footer*)((char*)(curr_block_header) - sizeof(struct block_footer));
-		struct block_header* prev_header = (struct block_header*)((char*)(ptr) - (prev_footer->size));
+		struct block_header* prev_header = (struct block_header*)((char*)(curr_block_header) - (prev_footer->size));
 		curr_block_header = coalesce(&prev_header, &curr_block_header);
 	}
 
