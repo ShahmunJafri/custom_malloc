@@ -25,27 +25,34 @@ void vmfree(void *ptr)
 	if(!(curr_block_header->size_status & VM_BUSY)){
 		return; 
 	}
-	
-       	if(!(curr_block_header->size_status & VM_PREVBUSY)){
-		struct block_footer* prev_block_footer = (struct block_footer*)((char*)(ptr) - sizeof(struct block_footer));
-		size_t prev_size = prev_block_footer->size;
-		struct block_header* prev_block_header = (struct block_header*)((char *)(ptr) - prev_size);
-		ptr = coalesce(&prev_block_header, &curr_block_header);
-	}	
 
-	struct block_header* next_block_header = (struct block_header*) ((char *) ptr + BLKSZ(curr_block_header));
-	
-	if(!(next_block_header->size_status & VM_BUSY)){
-		ptr = coalesce(&curr_block_header, &next_block_header);
+	ptr = (void*) (curr_block_header);
+
+	if(!(curr_block_header->size_status & VM_PREVBUSY)){
+		struct block_footer* prev_footer = (struct block_footer*)((char*)(ptr) - sizeof(struct block_footer));
+		struct block_header* prev_header = (struct block_header*)((char*)(ptr) - (prev_footer->size));
+		ptr = coalesce(&prev_header, &curr_block_header);
+		curr_block_header = (struct block_header*)(ptr);	
 	}
-	curr_block_header = (struct block_header*) ptr;
+
+	struct block_header* next_header = (struct block_header*)((char*)(ptr) + BLKSZ(curr_block_header));
+	
+	if(!(next_header->size_status & VM_BUSY)){
+		ptr = coalesce(&curr_block_header, &next_header);
+		ptr = (void*) (curr_block_header); 
+		curr_block_header = (struct block_header*)(ptr);	
+	}
+	
 	set_block_footer(curr_block_header);
-	curr_block_header->size_status = curr_block_header->size_status & ~VM_BUSY;
-	struct block_header* next_block_after_coalesce = (struct block_header*) ((char*) ptr + (BLKSZ(curr_block_header)));
+	
+	struct block_header* next_block_after_coalesce = (struct block_header*)((char*) curr_block_header + BLKSZ(curr_block_header));
 	if(next_block_after_coalesce->size_status == VM_ENDMARK){
 		return;
 	}
+	
 	next_block_after_coalesce->size_status = next_block_after_coalesce->size_status & ~VM_PREVBUSY;
+
+	
 }
 
 void set_block_footer(struct block_header* block){
